@@ -22,12 +22,29 @@ public class DummyContent {
      * A map of sample (dummy) items, by ID.
      */
     public static Map<String, DummyItem> ITEM_MAP = new HashMap<String, DummyItem>();
+    public static DummyItem[] ITEM_ARRAY = new DummyItem[3];
 
     static {
         // Add 3 sample items.
         addItem(new DummyItem("1", "Item 1"));
         addItem(new DummyItem("2", "Item 2"));
         addItem(new DummyItem("3", "Item 3"));
+
+        // Add 3 sample items.
+        ITEM_ARRAY[0] = new DummyItem("1", "Item 1");
+        ITEM_ARRAY[1] = new DummyItem("2", "Item 2");
+        ITEM_ARRAY[2] = new DummyItem("3", "Item 3");
+    }
+
+    public static DummyItem[] getItemArray() {
+        String time = "" + System.currentTimeMillis();
+
+        DummyItem[] result = new DummyItem[3];
+        result[0] = new DummyItem("1", "Item 1 " + time);
+        result[1] = new DummyItem("2", "Item 2 " + time);
+        result[2] = new DummyItem("3", "Item 3 " + time);
+
+        return result;
     }
 
     private static void addItem(DummyItem item) {

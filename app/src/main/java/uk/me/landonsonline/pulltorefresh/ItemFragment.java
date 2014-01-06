@@ -1,6 +1,10 @@
 package uk.me.landonsonline.pulltorefresh;
 
 import android.app.Activity;
+import android.content.Context;
+import android.support.v4.app.LoaderManager.LoaderCallbacks;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -12,6 +16,12 @@ import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.TextView;
 
+import com.refreshable.list.RefreshableListView;
+import com.refreshable.list.RefreshableListView.OnListRefreshListener;
+import com.refreshable.list.RefreshableListView.OnListLoadMoreListener;
+
+import java.util.List;
+
 import uk.me.landonsonline.pulltorefresh.dummy.DummyContent;
 
 /**
@@ -19,11 +29,8 @@ import uk.me.landonsonline.pulltorefresh.dummy.DummyContent;
  * <p />
  * Large screen devices (such as tablets) are supported by replacing the ListView
  * with a GridView.
- * <p />
- * Activities containing this fragment MUST implement the {@link Callbacks}
- * interface.
  */
-public class ItemFragment extends Fragment implements AbsListView.OnItemClickListener {
+public class ItemFragment extends Fragment implements AbsListView.OnItemClickListener, OnListRefreshListener, OnListLoadMoreListener, LoaderCallbacks<DummyContent.DummyItem[]> {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -39,13 +46,13 @@ public class ItemFragment extends Fragment implements AbsListView.OnItemClickLis
     /**
      * The fragment's ListView/GridView.
      */
-    private AbsListView mListView;
+    private RefreshableListView mListView;
 
     /**
      * The Adapter which will be used to populate the ListView/GridView with
      * Views.
      */
-    private ListAdapter mAdapter;
+    private ItemArrayAdapter mAdapter;
 
     // TODO: Rename and change types of parameters
     public static ItemFragment newInstance(String param1, String param2) {
@@ -74,7 +81,7 @@ public class ItemFragment extends Fragment implements AbsListView.OnItemClickLis
         }
 
         // TODO: Change Adapter to display your content
-        mAdapter = new ArrayAdapter<DummyContent.DummyItem>(getActivity(),
+        mAdapter = new ItemArrayAdapter(getActivity(),
                 android.R.layout.simple_list_item_1, android.R.id.text1, DummyContent.ITEMS);
     }
 
@@ -83,12 +90,19 @@ public class ItemFragment extends Fragment implements AbsListView.OnItemClickLis
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_item, container, false);
 
+        //RefreshableList lines start
+        mListView = (RefreshableListView) view.findViewById(R.id.RefreshList);
+        mListView.setOnListRefreshListener(this);//---------------------------------------------------------------Important
+        mListView.setOnListLoadMoreListener(this);
+        //RefreshableList Lines end
+
+        getLoaderManager().initLoader(0, null, this);
+
         // Set the adapter
-        mListView = (AbsListView) view.findViewById(android.R.id.list);
-        ((AdapterView<ListAdapter>) mListView).setAdapter(mAdapter);
+        mListView.setAdapter(mAdapter);
 
         // Set OnItemClickListener so we can be notified on item clicks
-        mListView.setOnItemClickListener(this);
+        //mListView.setOnItemClickListener(this);
 
         return view;
     }
@@ -120,17 +134,37 @@ public class ItemFragment extends Fragment implements AbsListView.OnItemClickLis
         }
     }
 
-    /**
-     * The default content for this Fragment has a TextView that is shown when
-     * the list is empty. If you would like to change the text, call this method
-     * to supply the text it should use.
-     */
-    public void setEmptyText(CharSequence emptyText) {
-        View emptyView = mListView.getEmptyView();
+    @Override
+    public Loader<DummyContent.DummyItem[]> onCreateLoader(int id, Bundle args) {
+        return new AsyncTaskLoader<DummyContent.DummyItem[]>(getActivity())
+        {
+            @Override
+            protected void onStartLoading()
+            {
+                forceLoad();
+            }
 
-        if (emptyText instanceof TextView) {
-            ((TextView) emptyView).setText(emptyText);
-        }
+            @Override
+            public DummyContent.DummyItem[] loadInBackground()
+            {
+                try {
+                    Thread.sleep(3000l);
+                } catch (InterruptedException e) {
+                }
+                return DummyContent.getItemArray();
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(android.support.v4.content.Loader<DummyContent.DummyItem[]> loader, DummyContent.DummyItem[] strings) {
+        mAdapter.setData(strings);
+        mListView.finishRefresh();
+    }
+
+    @Override
+    public void onLoaderReset(android.support.v4.content.Loader<DummyContent.DummyItem[]> loader) {
+        mAdapter.clear();
     }
 
     /**
@@ -148,4 +182,30 @@ public class ItemFragment extends Fragment implements AbsListView.OnItemClickLis
         public void onFragmentInteraction(String id);
     }
 
+    public void Refresh(RefreshableListView list) {
+        getLoaderManager().restartLoader(0, null, this);
+    }
+
+    public void LoadMore(RefreshableListView list) {
+        getLoaderManager().restartLoader(0, null, this);
+    }
+
+    public class ItemArrayAdapter extends ArrayAdapter<DummyContent.DummyItem> {
+
+        public ItemArrayAdapter(Context context, int resource, int textViewResourceId, List<DummyContent.DummyItem> objects) {
+            super(context, resource, textViewResourceId, objects);
+        }
+
+        public void setData(DummyContent.DummyItem[] data)
+        {
+            clear();
+            if (data != null)
+            {
+                for(DummyContent.DummyItem i : data) {
+                    add(i);
+                }
+            }
+        }
+
+    }
 }
