@@ -187,7 +187,7 @@ public class ItemFragment extends Fragment implements AbsListView.OnItemClickLis
     }
 
     public void LoadMore(RefreshableListView list) {
-        getLoaderManager().restartLoader(0, null, this);
+//        getLoaderManager().restartLoader(0, null, this);
     }
 
     public class ItemArrayAdapter extends ArrayAdapter<DummyContent.DummyItem> {
